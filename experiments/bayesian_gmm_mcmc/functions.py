@@ -185,4 +185,5 @@ def bayesian_gmm_mcmc(
         plt.tight_layout()
         plt.show()
 
-    return thinned_samples, mu_init, log_sigma_init, pi_init
+    return thinned_samples, mu_init, log_sigma_init, pi_init, mu_post, sigma_post, pi_post
+
