@@ -4,6 +4,7 @@ import seaborn as sns
 from scipy.stats import norm, beta, halfnorm
 from sklearn.mixture import GaussianMixture
 
+
 def bayesian_gmm_mcmc(
     data,
     n_components=3,
@@ -187,3 +188,78 @@ def bayesian_gmm_mcmc(
 
     return thinned_samples, mu_init, log_sigma_init, pi_init, mu_post, sigma_post, pi_post
 
+
+def plot_gmm_vs_posterior(
+    mu_init, log_sigma_init, pi_init,
+    mu_post, sigma_post, pi_post,
+    x_range=None,
+    n_points=1000
+):
+    """
+    Plot initial GMM components and posterior Gaussian mixture components.
+
+    Parameters
+    ----------
+    mu_init : array-like
+        Initial means μ_k from GMM initialization.
+    log_sigma_init : array-like
+        Log standard deviations (log σ_k) from GMM initialization.
+    pi_init : array-like
+        Initial mixing weights π_k from GMM initialization.
+    mu_post : array-like
+        Posterior means μ_k from MCMC.
+    sigma_post : array-like
+        Posterior standard deviations σ_k from MCMC.
+    pi_post : array-like
+        Posterior mixing weights π_k from MCMC.
+    x_range : tuple, optional
+        (min, max) range for x-axis values. If None, calculated automatically.
+    n_points : int, optional
+        Number of points in x grid for plotting.
+
+    Returns
+    -------
+    None
+    """
+    sigma_init = np.exp(log_sigma_init)
+
+    # Define x range for plotting if not provided
+    if x_range is None:
+        x_min = min(np.min(mu_init - 4*sigma_init), np.min(mu_post - 4*sigma_post))
+        x_max = max(np.max(mu_init + 4*sigma_init), np.max(mu_post + 4*sigma_post))
+        x_range = (x_min, x_max)
+
+    x = np.linspace(x_range[0], x_range[1], n_points)
+
+    # Compute PDFs for initial GMM components
+    pdf_init = np.zeros_like(x)
+    for k in range(len(mu_init)):
+        pdf_init += pi_init[k] * norm.pdf(x, mu_init[k], sigma_init[k])
+
+    # Compute PDFs for posterior components
+    pdf_post = np.zeros_like(x)
+    for k in range(len(mu_post)):
+        pdf_post += pi_post[k] * norm.pdf(x, mu_post[k], sigma_post[k])
+
+    plt.figure(figsize=(10, 6))
+
+    # Plot initial components separately
+    for k in range(len(mu_init)):
+        plt.plot(x, pi_init[k]*norm.pdf(x, mu_init[k], sigma_init[k]),
+                 linestyle='--', label=f'Init Comp {k+1}', alpha=0.7)
+    # Plot initial mixture (sum)
+    plt.plot(x, pdf_init, linestyle='--', color='black', label='Init GMM Mixture')
+
+    # Plot posterior components separately
+    for k in range(len(mu_post)):
+        plt.plot(x, pi_post[k]*norm.pdf(x, mu_post[k], sigma_post[k]),
+                 linestyle='-', label=f'Posterior Comp {k+1}', alpha=0.9)
+    # Plot posterior mixture (sum)
+    plt.plot(x, pdf_post, linestyle='-', color='red', linewidth=2, label='Posterior Mixture')
+
+    plt.title('Initial GMM vs Posterior Gaussian Components')
+    plt.xlabel('x')
+    plt.ylabel('Density')
+    plt.legend()
+    plt.grid(True)
+    plt.show()
