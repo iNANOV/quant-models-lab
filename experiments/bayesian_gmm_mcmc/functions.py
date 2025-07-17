@@ -365,3 +365,142 @@ def plot_upward_crossings(df, gamma_probs, threshold=0.99, marker_type='v',
         figscale=figscale,
         datetime_format='%Y-%m-%d'
     )
+
+def evaluate_negative_returns_after_signals_with_prices(df_ohlc, gamma_probs, threshold=0.5, horizon=4):
+    """
+    Evaluate how many returns after gamma upward threshold crossings are negative.
+    Returns are calculated as (close_{t+1+horizon} - open_{t+1}) / open_{t+1}.
+    
+    Parameters:
+        df_ohlc   : DataFrame with 'open' and 'close' columns and datetime index
+        gamma_probs: 1D array of regime probabilities
+        threshold : crossing threshold
+        horizon   : number of periods to look ahead for return
+    
+    Returns:
+        total signals, count of negative returns, negative return ratio
+    """
+    signals = []
+    above = False
+    for i in range(1, len(gamma_probs)):
+        if not above and gamma_probs[i] >= threshold and gamma_probs[i-1] < threshold:
+            signals.append(i)
+            above = True
+        elif gamma_probs[i] < threshold:
+            above = False
+
+    negatives = 0
+    total = len(signals)
+
+    for t in signals:
+        start_idx = t + 1
+        end_idx = t + horizon
+
+        if end_idx >= len(df_ohlc):
+            continue  # skip if horizon exceeds data length
+
+        open_price = df_ohlc.iloc[start_idx]['open']
+        close_price = df_ohlc.iloc[end_idx]['close']
+
+        ret = (close_price - open_price) / open_price
+        if ret < 0:
+            negatives += 1
+
+    ratio = negatives / total if total > 0 else float('nan')
+
+    return total, negatives, ratio
+
+def annotate_signals_and_returns(df_ohlc, gamma_probs, threshold=0.5, horizon=4):
+    """
+    Annotate DataFrame with gamma probabilities, signals, and future returns.
+    
+    Parameters:
+        df_ohlc    : DataFrame with 'open' and 'close' columns (datetime-indexed)
+        gamma_probs: 1D numpy array of regime probabilities for a given regime
+        threshold  : threshold for signal detection
+        horizon    : periods to look ahead for return calculation
+    
+    Returns:
+        df with new columns: 'gamma', 'signal', 'future_return'
+    """
+    df = df_ohlc.copy()
+    df['gamma'] = gamma_probs
+    df['signal'] = 0
+    df['future_return'] = np.nan
+    
+    above = False
+    for i in range(1, len(df)):
+        if (not above) and (gamma_probs[i] >= threshold) and (gamma_probs[i-1] < threshold):
+            df.at[df.index[i], 'signal'] = 1
+            above = True
+        elif gamma_probs[i] < threshold:
+            above = False
+    
+    for i in df.index[df['signal'] == 1]:
+        t = df.index.get_loc(i)
+        start_idx = t + 1
+        end_idx = t + horizon
+        
+        if end_idx < len(df):
+            open_price = df.iloc[start_idx]['open']
+            close_price = df.iloc[end_idx]['close']
+            ret = (close_price - open_price) / open_price
+            df.at[df.index[t], 'future_return'] = ret
+    
+    return df
+
+def generate_performance_table(df_train, df_test, gamma_train_t, gamma_test_t, regime_idx=0, threshold=0.5, horizons=[1, 4, 6, 10]):
+    """
+    Evaluate negative return ratios for multiple horizons and return a formatted DataFrame.
+    """
+    results = {'Horizon': []}
+
+    train_signals = []
+    train_negatives = []
+    train_ratios = []
+
+    test_signals = []
+    test_negatives = []
+    test_ratios = []
+
+    for h in horizons:
+        # Train
+        total_train, negatives_train, ratio_train = evaluate_negative_returns_after_signals(
+            returns=df_train['return'].values,
+            gamma_probs=gamma_train_t[:, regime_idx],
+            threshold=threshold,
+            horizon=h
+        )
+
+        # Test
+        total_test, negatives_test, ratio_test = evaluate_negative_returns_after_signals(
+            returns=df_test['return'].values,
+            gamma_probs=gamma_test_t[:, regime_idx],
+            threshold=threshold,
+            horizon=h
+        )
+
+        results['Horizon'].append(h)
+        train_signals.append(total_train)
+        train_negatives.append(negatives_train)
+        train_ratios.append(f"{ratio_train:.2%}")
+
+        test_signals.append(total_test)
+        test_negatives.append(negatives_test)
+        test_ratios.append(f"{ratio_test:.2%}")
+
+    # Combine into DataFrame
+    table = pd.DataFrame({
+        'Horizon': results['Horizon'],
+        'Train Signals': train_signals,
+        'Train Negatives': train_negatives,
+        'Train Negative Ratio': train_ratios,
+        'Test Signals': test_signals,
+        'Test Negatives': test_negatives,
+        'Test Negative Ratio': test_ratios,
+    })
+
+    # Set horizon as index
+    table.set_index('Horizon', inplace=True)
+
+    return table
