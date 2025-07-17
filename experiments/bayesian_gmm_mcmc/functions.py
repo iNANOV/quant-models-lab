@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 from scipy.stats import norm, beta, halfnorm
 from sklearn.mixture import GaussianMixture
-
+import mplfinance as mpf
 
 def bayesian_gmm_mcmc(
     data,
