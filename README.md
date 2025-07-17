@@ -57,7 +57,7 @@ README.md
 * Keep external dependencies minimal; prefer pure‑Python or widely‑available packages.
 * Write notebooks as teaching material: narrative first, code blocks interleaved, tidy outputs.
 * Include a YAML header with metadata (`title`, `authors`, `date`, `tags`).
-* Feel free to use the empty_template.ipynb
+* Feel free to use the ./experiments/empty_template.ipynb
 
 ---
 
