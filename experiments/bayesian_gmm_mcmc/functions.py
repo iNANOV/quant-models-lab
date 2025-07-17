@@ -450,9 +450,6 @@ def annotate_signals_and_returns(df_ohlc, gamma_probs, threshold=0.5, horizon=4)
     return df
 
 def generate_performance_table(df_train, df_test, gamma_train_t, gamma_test_t, regime_idx=0, threshold=0.5, horizons=[1, 4, 6, 10]):
-    """
-    Evaluate negative return ratios for multiple horizons and return a formatted DataFrame.
-    """
     results = {'Horizon': []}
 
     train_signals = []
@@ -465,16 +462,16 @@ def generate_performance_table(df_train, df_test, gamma_train_t, gamma_test_t, r
 
     for h in horizons:
         # Train
-        total_train, negatives_train, ratio_train = evaluate_negative_returns_after_signals(
-            returns=df_train['return'].values,
+        total_train, negatives_train, ratio_train = evaluate_negative_returns_after_signals_with_prices(
+            df_ohlc=df_train,
             gamma_probs=gamma_train_t[:, regime_idx],
             threshold=threshold,
             horizon=h
         )
 
         # Test
-        total_test, negatives_test, ratio_test = evaluate_negative_returns_after_signals(
-            returns=df_test['return'].values,
+        total_test, negatives_test, ratio_test = evaluate_negative_returns_after_signals_with_prices(
+            df_ohlc=df_test,
             gamma_probs=gamma_test_t[:, regime_idx],
             threshold=threshold,
             horizon=h
@@ -489,7 +486,6 @@ def generate_performance_table(df_train, df_test, gamma_train_t, gamma_test_t, r
         test_negatives.append(negatives_test)
         test_ratios.append(f"{ratio_test:.2%}")
 
-    # Combine into DataFrame
     table = pd.DataFrame({
         'Horizon': results['Horizon'],
         'Train Signals': train_signals,
@@ -500,7 +496,5 @@ def generate_performance_table(df_train, df_test, gamma_train_t, gamma_test_t, r
         'Test Negative Ratio': test_ratios,
     })
 
-    # Set horizon as index
     table.set_index('Horizon', inplace=True)
-
     return table
