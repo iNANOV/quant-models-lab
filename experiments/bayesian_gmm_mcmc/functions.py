@@ -283,29 +283,32 @@ def compute_gamma_t(x, mu, sigma, pi):
     gamma_t = likelihoods / denom
     return gamma_t.T  # shape: (T, n_regimes)
 
-def plot_regime_probabilities(x, mu, sigma, pi, labels=None, colors=None):
+def plot_regime_probabilities(x, mu, sigma, pi, dates=None, labels=None, colors=None):
     """
-    Plot posterior probabilities for multiple regimes.
-    
+    Plot posterior probabilities for multiple regimes with optional datetime x-axis.
+
     Parameters:
         x       : 1D array of data (returns)
         mu      : regime means
         sigma   : regime stds
         pi      : regime weights
+        dates   : (optional) pandas Series or array-like of datetime objects
         labels  : list of labels for regimes (optional)
         colors  : list of colors for plotting (optional)
     """
     gamma_t = compute_gamma_t(x, mu, sigma, pi)
     n_regimes = gamma_t.shape[1]
 
+    x_vals = dates if dates is not None else np.arange(len(x))
+
     plt.figure(figsize=(14, 6))
     for k in range(n_regimes):
         label = labels[k] if labels else f'Regime {k+1}'
         color = colors[k] if colors else None
-        plt.plot(gamma_t[:, k], label=label, color=color)
+        plt.plot(x_vals, gamma_t[:, k], label=label, color=color)
     
     plt.title(f'Posterior Regime Probabilities ({n_regimes} Regimes)')
-    plt.xlabel('Time Index')
+    plt.xlabel('Date' if dates is not None else 'Time Index')
     plt.ylabel('Probability')
     plt.legend()
     plt.grid(True)
