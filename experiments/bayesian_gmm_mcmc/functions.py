@@ -410,45 +410,6 @@ def evaluate_negative_returns_after_signals_with_prices(df_ohlc, gamma_probs, th
 
     return total, negatives, ratio
 
-def annotate_signals_and_returns(df_ohlc, gamma_probs, threshold=0.5, horizon=4):
-    """
-    Annotate DataFrame with gamma probabilities, signals, and future returns.
-    
-    Parameters:
-        df_ohlc    : DataFrame with 'open' and 'close' columns (datetime-indexed)
-        gamma_probs: 1D numpy array of regime probabilities for a given regime
-        threshold  : threshold for signal detection
-        horizon    : periods to look ahead for return calculation
-    
-    Returns:
-        df with new columns: 'gamma', 'signal', 'future_return'
-    """
-    df = df_ohlc.copy()
-    df['gamma'] = gamma_probs
-    df['signal'] = 0
-    df['future_return'] = np.nan
-    
-    above = False
-    for i in range(1, len(df)):
-        if (not above) and (gamma_probs[i] >= threshold) and (gamma_probs[i-1] < threshold):
-            df.at[df.index[i], 'signal'] = 1
-            above = True
-        elif gamma_probs[i] < threshold:
-            above = False
-    
-    for i in df.index[df['signal'] == 1]:
-        t = df.index.get_loc(i)
-        start_idx = t + 1
-        end_idx = t + horizon
-        
-        if end_idx < len(df):
-            open_price = df.iloc[start_idx]['open']
-            close_price = df.iloc[end_idx]['close']
-            ret = (close_price - open_price) / open_price
-            df.at[df.index[t], 'future_return'] = ret
-    
-    return df
-
 def generate_performance_table(df_train, df_test, gamma_train_t, gamma_test_t, regime_idx=0, threshold=0.5, horizons=[1, 4, 6, 10]):
     results = {'Horizon': []}
 
@@ -498,3 +459,43 @@ def generate_performance_table(df_train, df_test, gamma_train_t, gamma_test_t, r
 
     table.set_index('Horizon', inplace=True)
     return table
+
+def annotate_signals_and_returns(df_ohlc, gamma_probs, threshold=0.5, horizon=4):
+    """
+    Annotate DataFrame with gamma probabilities, signals, and future returns.
+    
+    Parameters:
+        df_ohlc    : DataFrame with 'open' and 'close' columns (datetime-indexed)
+        gamma_probs: 1D numpy array of regime probabilities for a given regime
+        threshold  : threshold for signal detection
+        horizon    : periods to look ahead for return calculation
+    
+    Returns:
+        df with new columns: 'gamma', 'signal', 'future_return'
+    """
+    df = df_ohlc.copy()
+    df['gamma'] = gamma_probs
+    df['signal'] = 0
+    df['future_return'] = np.nan
+    
+    above = False
+    for i in range(1, len(df)):
+        if (not above) and (gamma_probs[i] >= threshold) and (gamma_probs[i-1] < threshold):
+            df.at[df.index[i], 'signal'] = 1
+            above = True
+        elif gamma_probs[i] < threshold:
+            above = False
+    
+    for i in df.index[df['signal'] == 1]:
+        t = df.index.get_loc(i)
+        start_idx = t + 1
+        end_idx = t + horizon
+        
+        if end_idx < len(df):
+            open_price = df.iloc[start_idx]['open']
+            close_price = df.iloc[end_idx]['close']
+            ret = (close_price - open_price) / open_price
+            df.at[df.index[t], 'future_return'] = ret
+    
+    return df
+
