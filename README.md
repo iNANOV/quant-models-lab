@@ -11,7 +11,7 @@ A curated playground of quantitative finance notebooks, each designed to be run 
 quant-models-lab/
   experiments/
     bayesian_gmm_mcmc/
-      - Bayesian_GMM_MH.ipynb
+      - bayesian_gmm_mcmc_regime_forecast.ipynb
       - functions.py
       - readme.md
 README.md
