@@ -342,7 +342,7 @@ def plot_upward_crossings(df, gamma_probs, threshold=0.99, marker_type='v',
 
     # Create marker positions
     marker_positions = np.full(len(df), np.nan)
-    marker_positions[upward_crossings_idx] = df['high'].iloc[upward_crossings_idx] * 1.1
+    marker_positions[upward_crossings_idx] = df['high'].iloc[upward_crossings_idx] * 1.05
 
     # Build mplfinance addplot
     apdict = mpf.make_addplot(
