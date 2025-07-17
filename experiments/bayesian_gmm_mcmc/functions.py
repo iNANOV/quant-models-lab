@@ -314,3 +314,52 @@ def plot_regime_probabilities(x, mu, sigma, pi, dates=None, labels=None, colors=
     plt.grid(True)
     plt.tight_layout()
     plt.show()
+
+def plot_upward_crossings(df, gamma_probs, threshold=0.99, marker_type='v',
+                          marker_size=20, marker_color='red', type = 'line',
+                          title='Upward Crossings', figscale=3):
+    """
+    Plots an OHLC chart with markers for upward crossings of a threshold in regime probabilities.
+    """
+    df = df.copy()
+
+    # Force 'date' column to be datetime
+    if 'date' not in df.columns:
+        raise ValueError("DataFrame must contain a 'date' column.")
+
+    df['date'] = pd.to_datetime(df['date'], errors='coerce')
+    if df['date'].isnull().any():
+        raise ValueError("Invalid dates found in 'date' column.")
+
+    df = df.set_index('date')
+
+    # Detect upward crossings
+    upward_crossings_idx = np.where(
+        (gamma_probs[:-1] < threshold) & (gamma_probs[1:] >= threshold)
+    )[0] + 1
+
+    # Create marker positions
+    marker_positions = np.full(len(df), np.nan)
+    marker_positions[upward_crossings_idx] = df['high'].iloc[upward_crossings_idx] * 1.1
+
+    # Build mplfinance addplot
+    apdict = mpf.make_addplot(
+        marker_positions,
+        type='scatter',
+        markersize=marker_size,
+        marker=marker_type,
+        color=marker_color
+    )
+
+    # Plot OHLC with markers
+    mpf.plot(
+        df,
+        type=type,
+        style='yahoo',
+        addplot=apdict,
+        title=title,
+        ylabel='Price',
+        volume=False,
+        figscale=figscale,
+        datetime_format='%Y-%m-%d'
+    )
