@@ -263,3 +263,51 @@ def plot_gmm_vs_posterior(
     plt.legend()
     plt.grid(True)
     plt.show()
+
+def compute_gamma_t(x, mu, sigma, pi):
+    """
+    Compute posterior regime probabilities (γₜ) for any number of regimes.
+    
+    Parameters:
+        x      : 1D array of data points
+        mu     : array of means for each regime
+        sigma  : array of std deviations for each regime
+        pi     : array of weights for each regime
+        
+    Returns:
+        gamma_t : 2D array of shape (len(x), n_regimes)
+    """
+    n_regimes = len(mu)
+    likelihoods = np.array([pi[k] * norm.pdf(x, mu[k], sigma[k]) for k in range(n_regimes)])
+    denom = np.sum(likelihoods, axis=0) + 1e-12  # Avoid division by zero
+    gamma_t = likelihoods / denom
+    return gamma_t.T  # shape: (T, n_regimes)
+
+def plot_regime_probabilities(x, mu, sigma, pi, labels=None, colors=None):
+    """
+    Plot posterior probabilities for multiple regimes.
+    
+    Parameters:
+        x       : 1D array of data (returns)
+        mu      : regime means
+        sigma   : regime stds
+        pi      : regime weights
+        labels  : list of labels for regimes (optional)
+        colors  : list of colors for plotting (optional)
+    """
+    gamma_t = compute_gamma_t(x, mu, sigma, pi)
+    n_regimes = gamma_t.shape[1]
+
+    plt.figure(figsize=(14, 6))
+    for k in range(n_regimes):
+        label = labels[k] if labels else f'Regime {k+1}'
+        color = colors[k] if colors else None
+        plt.plot(gamma_t[:, k], label=label, color=color)
+    
+    plt.title(f'Posterior Regime Probabilities ({n_regimes} Regimes)')
+    plt.xlabel('Time Index')
+    plt.ylabel('Probability')
+    plt.legend()
+    plt.grid(True)
+    plt.tight_layout()
+    plt.show()
