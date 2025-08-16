@@ -14,6 +14,11 @@ quant-models-lab/
       - bayesian_gmm_mcmc_regime_forecast.ipynb
       - functions.py
       - readme.md
+    gaussian_hmm/
+      - gaussian_hmm_regime_forecast.ipynb
+      - functions.py
+      - readme.md
+    ...
 README.md
 ``` 
 
@@ -34,11 +39,15 @@ README.md
 
 | # | Notebook | Focus | Key techniques |
 |---|----------|-------|----------------|
-| 1 | **Bayesian_GMM_MH.ipynb** | Bayesian inference of Gaussian Mixture Models on equity return distributions | Metropolis–Hastings MCMC, posterior predictive checks|
+| 1 | **bayesian_gmm_mcmc_regime_forecast.ipynb** | Bayesian inference of Gaussian Mixture Models on equity return distributions | Metropolis–Hastings MCMC, posterior predictive checks|
+| 2 | **gaussian_hmm_regime_forecast.ipynb** | Detecting market regimes and forecasting returns using Hidden Markov Models | Gaussian HMM, Baum–Welch (EM) training, Viterbi decoding, forward–backward posterior, next-state and next-observation forecasting |
 
 > **Coming soon**  
-> - Hidden Markov Chain 
-> - SWARCH + LSTM 
+> - SWARCH + LSTM
+> - Martingale Change-Point HMM
+> - State Space Models (SSMs)
+> - linear Gaussian SSM (Kalman filter) with time-varying mean (TVP)
+
 
 ---
 
