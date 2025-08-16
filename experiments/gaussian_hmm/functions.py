@@ -277,3 +277,65 @@ def forecast_all_next_states_and_observations(model, X):
         E_next_obs[t] = np.dot(P_next_states[t], model.mu)
 
     return P_next_states, E_next_obs
+
+# --- Helper function: evaluate bearish signals ---
+def evaluate_bear_signals(df_ohlc, signals, horizon):
+    """
+    For each signal, compute return from next open to close after horizon periods.
+    Count as negative (successful bear signal) if return < 0.
+    """
+    total_signals = signals.sum()
+    negatives = 0
+
+    for i in range(len(df_ohlc) - horizon):
+        if signals.iloc[i]:
+            next_open = df_ohlc['open'].iloc[i + 1]
+            horizon_close = df_ohlc['close'].iloc[i + horizon]
+            ret = horizon_close / next_open - 1
+            if ret < 0:  # Negative return = correct bearish prediction
+                negatives += 1
+
+    ratio = negatives / total_signals if total_signals > 0 else np.nan
+    return total_signals, negatives, ratio
+
+# --- Generate Bear performance table ---
+def generate_bear_performance_table(df_train, df_test, bear_cross_train, bear_cross_test, horizons=[1, 4, 6, 10]):
+    results = {'Horizon': []}
+    train_signals, train_negatives, train_ratios = [], [], []
+    test_signals, test_negatives, test_ratios = [], [], []
+
+    for h in horizons:
+        # --- Train ---
+        total_train, negatives_train, ratio_train = evaluate_bear_signals(
+            df_ohlc=df_train,
+            signals=bear_cross_train,
+            horizon=h
+        )
+        # --- Test ---
+        total_test, negatives_test, ratio_test = evaluate_bear_signals(
+            df_ohlc=df_test,
+            signals=bear_cross_test,
+            horizon=h
+        )
+
+        results['Horizon'].append(h)
+        train_signals.append(total_train)
+        train_negatives.append(negatives_train)
+        train_ratios.append(f"{ratio_train:.2%}")
+
+        test_signals.append(total_test)
+        test_negatives.append(negatives_test)
+        test_ratios.append(f"{ratio_test:.2%}")
+
+    table = pd.DataFrame({
+        'Horizon': results['Horizon'],
+        'Train Signals': train_signals,
+        'Train Negatives': train_negatives,
+        'Train Negative Ratio': train_ratios,
+        'Test Signals': test_signals,
+        'Test Negatives': test_negatives,
+        'Test Negative Ratio': test_ratios,
+    })
+
+    table.set_index('Horizon', inplace=True)
+    return table
